@@ -27,7 +27,7 @@ class WebSocket { // lets use composition so we can intercept send / onmessage a
         return _ws.onclose;
     }
     private function set_onclose(value:Function):Function {
-        _ws.onclose = function(e:js.html.Event) {
+        _ws.onclose = function(e:js.html.CloseEvent) {
             value(e.code, e.reason);
         };
         return value;
