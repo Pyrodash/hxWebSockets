@@ -2,15 +2,28 @@ package hx.ws;
 
 import haxe.io.Bytes;
 
+abstract Maybe<T>(Null<T>) from Null<T> {
+    public inline function value():T {
+        return this;
+    }
+
+    public inline function exists():Bool {
+        return this != null;
+    }
+
+    public inline function or(def:T):T {
+        return if (exists()) this else def;
+    }
+}
+
 class Buffer {
     public var available(default, null):Int = 0;
     public var length(default, null):Int = 0;
-    private var currentOffset:Int = 0;
+    public var currentOffset:Int = 0;
     private var currentData: Bytes = null;
     private var chunks:Array<Bytes> = [];
 
-    public function new() {
-    }
+    public function new() {}
 
     public function writeByte(v:Int) {
         var b = Bytes.alloc(1);
@@ -63,7 +76,7 @@ class Buffer {
 
     public function readUntil(delimiter:String):Bytes {
         var dl = delimiter.length;
-
+        
         for (i in 0 ... available - dl) {
             var matched = true;
             for (j in 0 ... dl) {
@@ -165,5 +178,39 @@ class Buffer {
         }
 
         return true;
+    }
+
+    public function slice(start:Int = 0, ?endM:Maybe<Int>):Buffer {
+        var buffer = new Buffer();
+        var end:Int = endM.exists() ? adjustOffset(endM.value(), length) : length;
+    
+        start = adjustOffset(start, length);
+
+        buffer.writeBytes(readBytes(length));
+        buffer.currentOffset = currentOffset + start;
+        buffer.available = end > start ? end - start : 0;
+        buffer.length = length;
+
+        return buffer;
+    }
+
+    private function adjustOffset(offset:Int, length:Int) {
+        offset = offset > 0 ? Math.floor(offset) : Math.round(offset);
+
+        if (offset == 0) {
+            return 0;
+        }
+
+        if (offset < 0) {
+            offset += length;
+
+            return offset > 0 ? offset : 0;
+        }
+
+        if (offset < length) {
+            return offset;
+        }
+
+        return Math.isNaN(offset) ? 0 : length;
     }
 }
